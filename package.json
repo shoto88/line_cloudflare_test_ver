@@ -1,0 +1,24 @@
+{
+  "scripts": {
+    "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "date-fns": "^3.6.0",
+    "hono": "^4.4.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240529.0",
+    "@line/bot-sdk": "^9.2.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "better-sqlite3": "^11.0.0",
+    "drizzle-kit": "^0.22.7",
+    "drizzle-orm": "^0.31.2",
+    "wrangler": "^3.57.2"
+  }
+}
