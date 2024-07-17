@@ -1183,5 +1183,48 @@ app.get('/liff/waiting-time-info', async (c) => {
   }
 });
 
+
+// app.post('/api/notify-user/:ticketNumber', async (c) => {
+//   const ticketNumber = c.req.param('ticketNumber');
+//   const client = new messagingApi.MessagingApiClient({ channelAccessToken: c.env.LINE_CHANNEL_ACCESS_TOKEN });
+
+//   try {
+//     // チケット番号からLINE IDを取得
+//     const result = await c.env.DB.prepare('SELECT line_user_id, notified FROM tickets WHERE ticket_number = ?')
+//       .bind(ticketNumber)
+//       .first();
+
+//     if (!result || !result.line_user_id) {
+//       return c.json({ error: 'Ticket not found' }, 404);
+//     }
+
+//     if (result.notified) {
+//       return c.json({ error: 'Notification already sent' }, 400);
+//     }
+
+//     // プッシュメッセージを送信
+//     await client.pushMessage({
+//       to: result.line_user_id,
+//       messages: [{
+//         type: 'text',
+//         text: '来院目安となりました。'
+//       }]
+//     });
+
+//     // 通知状態を更新
+//     await c.env.DB.prepare('UPDATE tickets SET notified = TRUE WHERE ticket_number = ?')
+//       .bind(ticketNumber)
+//       .run();
+
+//     return c.json({ success: true });
+//   } catch (error) {
+//     console.error('Error sending notification:', error);
+//     c.executionCtx.waitUntil(sendErrorNotification(c, error, 'POST /api/notify-user/:ticketNumber'));
+//     return c.json({ error: 'Failed to send notification' }, 500);
+//   }
+// });
+
+
+
 export default app;
 
