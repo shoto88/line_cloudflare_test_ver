@@ -1087,15 +1087,78 @@ app.get('/api/queue-status', async (c) => {
 });
 
 // queue status を更新する API
+// app.put('/api/queue-status/:number', async (c) => {
+//   const number = parseInt(c.req.param('number'));
+//   const { status } = await c.req.json();
+
+//   try {
+//     await c.env.DB.prepare('UPDATE queue_status SET status = ? WHERE number = ?')
+//       .bind(status, number)
+//       .run();
+    
+//     return c.json({ success: true });
+//   } catch (error) {
+//     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+//     console.error('Error updating queue status:', errorMessage);
+//     c.executionCtx.waitUntil(sendErrorNotification(c, errorMessage, 'PUT /api/queue-status/:number'));
+//     return c.json({ error: 'Failed to update queue status' }, 500);
+//   }
+// });
 app.put('/api/queue-status/:number', async (c) => {
   const number = parseInt(c.req.param('number'));
   const { status } = await c.req.json();
+  const client = new messagingApi.MessagingApiClient({ channelAccessToken: c.env.LINE_CHANNEL_ACCESS_TOKEN });
+
+  console.log(`Updating status for number ${number} to ${status}`);
 
   try {
+    // ステータスを更新
     await c.env.DB.prepare('UPDATE queue_status SET status = ? WHERE number = ?')
       .bind(status, number)
       .run();
     
+    console.log('Status updated successfully');
+
+    // LINEで発券した全てのチケットを取得
+    const { results: lineTickets } = await c.env.DB.prepare(`
+      SELECT t.ticket_number, t.line_user_id, q.status
+      FROM tickets t
+      JOIN queue_status q ON t.ticket_number = q.number
+      WHERE t.line_user_id IS NOT NULL
+      ORDER BY t.ticket_number ASC
+    `).all();
+
+    console.log(`Found ${lineTickets.length} LINE tickets`);
+
+    // 各LINEチケットに対して通知チェック
+    for (const ticket of lineTickets) {
+      if (ticket.status === 0) {  // まだ診療が済んでいないチケットのみ処理
+        const unfinishedCount = await c.env.DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM queue_status
+          WHERE number < ? AND status = 0 AND number != ?
+        `).bind(ticket.ticket_number, ticket.ticket_number).first('count') as number;
+        
+        console.log(`Ticket ${ticket.ticket_number}: Unfinished before = ${unfinishedCount}`);
+
+        if (unfinishedCount === 5) {
+          console.log(`Sending notification to user with LINE ID: ${ticket.line_user_id}`);
+          try {
+            await client.pushMessage({
+              to: ticket.line_user_id as string,
+              messages: [{
+                type: 'text',
+                text: '順番まであと5組になりました🕰\n来院お待ちしております🏥'
+              }]
+            });
+            console.log('Notification sent successfully');
+          } catch (notificationError) {
+            console.error('Error sending notification:', notificationError);
+          }
+        }
+      }
+    }
+
     return c.json({ success: true });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1104,7 +1167,6 @@ app.put('/api/queue-status/:number', async (c) => {
     return c.json({ error: 'Failed to update queue status' }, 500);
   }
 });
-
 // queue_status テーブルをリセットする API（毎晩実行）
 // queue_status テーブルをリセットする API（毎晩実行）
 app.delete('/api/reset-queue-status', async (c) => {
