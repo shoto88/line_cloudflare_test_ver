@@ -106,7 +106,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
 "contents": [
   {
     "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：7月21日,8月4日",
+    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：8月4日,8月18日",
     "size": "xs",
     "color": "#0000ff",
     "wrap": true
@@ -619,7 +619,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
             },
             {
               "type": "text",
-              "text": "次回日曜診療日：7月21日,8月4日",
+              "text": "次回日曜診療日：8月4日,8月18日",
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",
@@ -753,5 +753,74 @@ function getHolidayMessage(): any[] {
     };
     return [flexMessage];
   }
+  
+function getWaitingNumbersMessage(waitingNumbers: number[]): any[] {
+  const columns = 5; // 1行あたりの列数
+  const rows = Math.ceil(waitingNumbers.length / columns);
+  
+  const flexMessage = {
+    "type": "flex",
+    "altText": "待ち番号一覧",
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "現在の待ち番号一覧",
+            "weight": "bold",
+            "size": "xl",
+            "margin": "md",
+            "align": "center"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "lg",
+            "spacing": "sm",
+            "contents": Array.from({ length: rows }, (_, rowIndex) => ({
+              "type": "box",
+              "layout": "horizontal",
+              "spacing": "sm",
+              "contents": Array.from({ length: columns }, (_, colIndex) => {
+                const index = rowIndex * columns + colIndex;
+                return index < waitingNumbers.length ? {
+                  "type": "box",
+                  "layout": "vertical",
+                  "contents": [
+                    {
+                      "type": "text",
+                      "text": String(waitingNumbers[index]),
+                      "size": "md",
+                      "color": "#111111",
+                      "align": "center",
+                      "weight": "bold"
+                    }
+                  ],
+                  "backgroundColor": "#fefbec",
+                  "cornerRadius": "md",
+                  "paddingAll": "sm"
+                } : {
+                  "type": "filler"
+                };
+              })
+            }))
+          },
+          {
+            "type": "text",
+            "text": `合計: ${waitingNumbers.length}組`,
+            "size": "sm",
+            "color": "#555555",
+            "margin": "lg",
+            "align": "end"
+          }
+        ]
+      }
+    }
+  };
 
-export { getStatusMessage, getTicketMessage, getTicketConfirmationMessage, getWaitingTimeMessage, getHoursMessage, getHolidayMessage };
+  return [flexMessage];
+}
+export { getStatusMessage, getTicketMessage, getTicketConfirmationMessage, getWaitingTimeMessage, getHoursMessage, getHolidayMessage, getWaitingNumbersMessage };
