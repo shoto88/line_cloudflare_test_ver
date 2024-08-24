@@ -286,7 +286,27 @@ await client.replyMessage({
       replyToken: event.replyToken as string,
       messages,
     });
-  }else if (event.message.text === "待ち番号") {
+  }else if (event.message.text === "reserve_start") {
+    try {
+      const result = await updateStatusToReserve(c);
+      await client.replyMessage({
+        replyToken: event.replyToken as string,
+        messages: [{
+          type: 'text',
+          text: result.message
+        }]
+      });
+    } catch (error) {
+      await client.replyMessage({
+        replyToken: event.replyToken as string,
+        messages: [{
+          type: 'text',
+          text: error instanceof Error ? error.message : '予約開始の設定中にエラーが発生しました。'
+        }]
+      });
+      c.executionCtx.waitUntil(sendErrorNotification(c, error, 'reserve_start command'));
+    }
+}else if (event.message.text === "待ち番号") {
     try {
       const waitingNumbers = await getWaitingNumbers(c);
       const messages = getWaitingNumbersMessage(waitingNumbers);
@@ -1456,6 +1476,25 @@ app.get('/liff/waiting-time-info', async (c) => {
 //   }
 // });
 
+// 新しい関数を追加
+async function updateStatusToReserve(c: { env: { DB: D1Database } }) {
+  try {
+    // 現在のステータスを確認
+    const currentStatus = await c.env.DB.prepare('SELECT value FROM status WHERE id = 1').first();
+    
+    if (currentStatus && currentStatus.value === 0) {
+      return { success: true, message: 'すでに予約開始状態（0）です。' };
+    }
+
+    // ステータスが0でない場合のみ更新
+    await c.env.DB.prepare('UPDATE status SET value = 0 WHERE id = 1').run();
+    return { success: true, message: 'ステータスを予約開始（0）に更新しました。' };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error updating status to reserve:', errorMessage);
+    throw new Error('ステータスの更新に失敗しました。');
+  }
+}
 
 
 export default app;

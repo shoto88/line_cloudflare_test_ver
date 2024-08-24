@@ -59,7 +59,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
                   "contents": [
                     {
                       "type": "text",
-                      "text": "診察中番号",
+                      "text": "診察済み組数",
                       "size": "sm",
                       "color": "#555555",
                       "flex": 0
@@ -106,7 +106,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
 "contents": [
   {
     "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：8月4日,8月18日",
+    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：9月8日,8月29日",
     "size": "xs",
     "color": "#0000ff",
     "wrap": true
@@ -329,7 +329,31 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
           contents: [
             {
               type: "text",
-              text: "大濠パーククリニック　診察予約券",
+              text: "受付時『番号表示』を押し",
+              weight: "bold",
+              size: "lg",
+              margin: "md",
+              align: "center",
+              contents: [
+                {
+                  type: "span",
+                  text: "受付時"
+                },
+                {
+                  type: "span",
+                  text: "『番号表示』",
+                  size: "xl",
+                  color: "#ff3131"
+                },
+                {
+                  type: "span",
+                  text: "を押し"
+                }
+              ]
+            },
+            {
+              type: "text",
+              text: "発券番号をご提示ください🙇‍♂️",
               weight: "bold",
               size: "lg",
               margin: "md",
@@ -339,13 +363,13 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
               type: "text",
               text: String(ticketNumber),
               weight: "bold",
-              size: "5xl",
+              size: "4xl",
               margin: "md",
               align: "center",
             },
             {
               type: "separator",
-              margin: "xxl",
+              margin: "lg",
             },
             {
               type: "box",
@@ -353,13 +377,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
               margin: "md",
               spacing: "sm",
               contents: [
-                {
-                  type: "text",
-                  text: "『番号表示』ボタンを押し、受付でご提示下さい",
-                  size: "xs",
-                  color: "#aaaaaa",
-                  wrap: true,
-                },
+
                 {
                   type: "text",
                   text: "・来院前にメルプの記入を必ずお願いします",
@@ -376,7 +394,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                 },
                 {
                   type: "text",
-                  text: "『待ち時間』ボタンで状況は随時確認できます",
+                  text: "・『待ち番号一覧』で随時確認できます",
                   size: "xs",
                   color: "#aaaaaa",
                   wrap: true,
@@ -448,7 +466,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                   contents: [
                     {
                       type: "text",
-                      text: "診察中番号",
+                      text: "診察済み組数",
                       size: "sm",
                       color: "#555555",
                       flex: 0,
@@ -555,7 +573,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                     },
                     {
                       "type": "text",
-                      "text": "10:20〜12:00 (午前)\n14:20〜18:00 (午後)",
+                      "text": "00:00〜12:20 (午前)\n13:20〜18:20 (午後)",
                       "wrap": true,
                       "color": "#111111",
                       "size": "sm",
@@ -577,7 +595,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                     },
                     {
                       "type": "text",
-                      "text": "10:20〜14:40",
+                      "text": "00:00〜14:40",
                       "wrap": true,
                       "color": "#111111",
                       "size": "sm",
@@ -599,7 +617,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                     },
                     {
                       "type": "text",
-                      "text": "10:20〜14:40",
+                      "text": "00:00〜14:40",
                       "wrap": true,
                       "color": "#111111",
                       "size": "sm",
@@ -609,17 +627,10 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                 }
               ]
             },
+
             {
               "type": "text",
-              "text": "利用開始時間を早める事も検討しております。",
-              "wrap": true,
-              "color": "#aaaaaa",
-              "size": "xs",
-              "margin": "lg"
-            },
-            {
-              "type": "text",
-              "text": "次回日曜診療日：8月4日,8月18日",
+              "text": "次回日曜診療日：9月8日,9月29日",
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",
@@ -691,7 +702,7 @@ function getHolidayMessage(): any[] {
                         },
                         {
                           "type": "text",
-                          "text": "10:20 - 11:40 / 14:20 - 18:10",
+                          "text": "00:00 - 12:20 / 13:20 - 18:20",
                           "wrap": true,
                           "color": "#666666",
                           "size": "sm",
@@ -713,7 +724,7 @@ function getHolidayMessage(): any[] {
                         },
                         {
                           "type": "text",
-                          "text": "10:20 - 14:20",
+                          "text": "00:00 - 14:40",
                           "wrap": true,
                           "color": "#666666",
                           "size": "sm",
