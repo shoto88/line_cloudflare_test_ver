@@ -106,7 +106,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
 "contents": [
   {
     "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：9月8日,8月29日",
+    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：9月29日,10月6日",
     "size": "xs",
     "color": "#0000ff",
     "wrap": true
@@ -595,7 +595,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                     },
                     {
                       "type": "text",
-                      "text": "00:00〜14:40",
+                      "text": "00:00〜14:30",
                       "wrap": true,
                       "color": "#111111",
                       "size": "sm",
@@ -617,7 +617,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
                     },
                     {
                       "type": "text",
-                      "text": "00:00〜14:40",
+                      "text": "00:00〜14:30",
                       "wrap": true,
                       "color": "#111111",
                       "size": "sm",
@@ -630,7 +630,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
 
             {
               "type": "text",
-              "text": "次回日曜診療日：9月8日,9月29日",
+              "text": "次回日曜診療日：9月29日,10月6日",
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",
@@ -724,7 +724,7 @@ function getHolidayMessage(): any[] {
                         },
                         {
                           "type": "text",
-                          "text": "00:00 - 14:40",
+                          "text": "00:00 - 14:30",
                           "wrap": true,
                           "color": "#666666",
                           "size": "sm",
