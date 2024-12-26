@@ -287,22 +287,22 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
         "contents": [
           {
             "type": "button",
-            "style": "link",
+            "style": "primary",
             "height": "sm",
             "action": {
-              "type": "message",
+              "type": "postback",
               "label": "発券する",
-              "text": "発券"
+              "data": "ACTION_TICKET_CONFIRM"
             }
           },
           {
             "type": "button",
-            "style": "link",
+            "style": "secondary",
             "height": "sm",
             "action": {
-              "type": "message",
+              "type": "postback",
               "label": "発券しない",
-              "text": "キャンセル"
+              "data": "ACTION_TICKET_CANCEL"
             }
           },
           {
