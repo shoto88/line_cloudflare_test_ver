@@ -159,12 +159,11 @@ app.post("/webhook", async (c) => {
   return c.json({ message: "Hello World!" });
 });
 const textEventHandler = async (event: webhook.Event, client: messagingApi.MessagingApiClient, c: any, waiting: number, treatment: number) => {
-    if (!isPostbackEvent(event) && !isAdminTextCommand(event)) {
-        return;
-    }
+  if (!isPostbackEvent(event) && !isAdminTextCommand(event)) {
+      return;
+  }
 
-
-    await client.showLoadingAnimation({
+  await client.showLoadingAnimation({
       chatId: event.source?.userId as string
   });
 
@@ -192,69 +191,71 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
           return;
       }
   }
-    const examinationTimeResult = await c.env.DB.prepare('SELECT minutes FROM examination_time WHERE id = 1').first();
-    const averageTime = examinationTimeResult ? examinationTimeResult.minutes : 4; // デフォルト値は4分
-    const action = event.postback.data; 
 
-    if (action === "ACTION_STATUS") {
+  const examinationTimeResult = await c.env.DB.prepare('SELECT minutes FROM examination_time WHERE id = 1').first();
+  const averageTime = examinationTimeResult ? examinationTimeResult.minutes : 4;
+  const action = event.postback.data;
+
+  if (action === "ACTION_STATUS") {
       const waitingCount = waiting;
       const treatmentCount = treatment;
       const messages = getStatusMessage(waitingCount, treatmentCount, averageTime);
       await client.replyMessage({
-        replyToken: event.replyToken as string,
-        messages,
+          replyToken: event.replyToken as string,
+          messages,
       });
-    } else if (action === "ACTION_TICKET") {
+  } else if (action === "ACTION_TICKET") {
       const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
       const systemStatus = systemStatusResult?.value ?? 0;
-    
-    
+
       if (systemStatus === 0) {
-        const messages = getTicketMessage(waiting, treatment, averageTime);
-        await client.replyMessage({
-          replyToken: event.replyToken as string,
-          messages,
-        });
-      } else {
-        const messages = getHoursMessage();
-        await client.replyMessage({
-          replyToken: event.replyToken as string,
-          messages,
-        });
-      }
-    } else if (action === "ACTION_TICKET_CONFIRM") {
-      const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
-      const systemStatus = systemStatusResult?.value ?? 0;
-    
-      if (systemStatus === 0) {
-        // 以下は既存のコード
-        const userId = event.source?.userId;
-        const result = await c.env.DB.prepare(
-          'SELECT EXISTS(SELECT 1 FROM tickets WHERE line_user_id = ?) AS already_ticketed'
-        )
-          .bind(userId)
-          .first();
-    
-        if (result && result.already_ticketed === 1) { 
-          const existingTicket = await c.env.DB.prepare(
-            'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
+          // 重複チェックを先に行う
+          const userId = event.source?.userId;
+          const result = await c.env.DB.prepare(
+              'SELECT EXISTS(SELECT 1 FROM tickets WHERE line_user_id = ?) AS already_ticketed'
           )
-            .bind(userId)
-            .first();
-    
-          const messages = [
-            {
-              type: 'text',
-              text: 'すでに発券済みです。',
-            },
-            getTicketConfirmationMessage(existingTicket?.ticket_number || 0)[0]
-          ];
-    
+              .bind(userId)
+              .first();
+
+          if (result && result.already_ticketed === 1) {
+              const existingTicket = await c.env.DB.prepare(
+                  'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
+              )
+                  .bind(userId)
+                  .first();
+
+              const messages: any[] = [
+                  {
+                      type: 'text',
+                      text: 'すでに発券済みです。',
+                  },
+                  getTicketConfirmationMessage(existingTicket?.ticket_number || 0)[0]
+              ];
+
+              await client.replyMessage({
+                  replyToken: event.replyToken as string,
+                  messages,
+              });
+          } else {
+              const messages = getTicketMessage(waiting, treatment, averageTime);
+              await client.replyMessage({
+                  replyToken: event.replyToken as string,
+                  messages,
+              });
+          }
+      } else {
+          const messages = getHoursMessage();
           await client.replyMessage({
-            replyToken: event.replyToken as string,
-            messages,
+              replyToken: event.replyToken as string,
+              messages,
           });
-        } else {
+      }
+  } else if (action === "ACTION_TICKET_CONFIRM") {
+      const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
+      const systemStatus = systemStatusResult?.value ?? 0;
+
+      if (systemStatus === 0) {
+          const userId = event.source?.userId;
           let waitingCount = waiting;
           const currentWaitingCount = waitingCount;
           waitingCount++;
@@ -264,38 +265,36 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
           const ticketNumber = currentWaitingCount + 1;
           const ticketTime = formatJapanTime(new Date(), "HH:mm");
           const profile = await client.getProfile(userId!);
-        
+
           await c.env.DB.prepare(
-            'INSERT INTO tickets (line_user_id, line_display_name, ticket_number, ticket_time) VALUES (?, ?, ?, ?)'
+              'INSERT INTO tickets (line_user_id, line_display_name, ticket_number, ticket_time) VALUES (?, ?, ?, ?)'
           )
-            .bind(userId, profile.displayName || '名無しさん', ticketNumber, ticketTime)
-            .run();
+              .bind(userId, profile.displayName || '名無しさん', ticketNumber, ticketTime)
+              .run();
           
           await updateQueueStatus(c, waitingCount);
-    
-          const messages = [
-            {
-              type: 'text',
-              text: 'https://www.melp.life/inquiries/new?c=F5moJ9k28I5SAZ2mhdE9ZhkeJU8E-g36-tExyIG78rPhc33sIrAuw3g4AWHLSg1Z'
-            },
-            getTicketConfirmationMessage(ticketNumber)[0]
+
+          const messages: any[] = [
+              {
+                  type: 'text',
+                  text: 'https://www.melp.life/inquiries/new?c=F5moJ9k28I5SAZ2mhdE9ZhkeJU8E-g36-tExyIG78rPhc33sIrAuw3g4AWHLSg1Z'
+              },
+              getTicketConfirmationMessage(ticketNumber)[0]
           ];
-    
+
           await client.replyMessage({
-            replyToken: event.replyToken as string,
-            messages,
+              replyToken: event.replyToken as string,
+              messages,
           });
-        }
       } else {
-        // ここから変更: systemStatusが0以外の場合の処理を追加
-        const messages = getHoursMessage();
-        await client.replyMessage({
-          replyToken: event.replyToken as string,
-          messages,
-        });
+          const messages = getHoursMessage();
+          await client.replyMessage({
+              replyToken: event.replyToken as string,
+              messages,
+          });
       }
-    } else if (action === "ACTION_TICKET_CANCEL") {
-      const messages = [{
+  } else if (action === "ACTION_TICKET_CANCEL") {
+      const messages: any[] = [{
           type: "text",
           text: "発券をキャンセルしました。"
       }];
@@ -303,31 +302,7 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
           replyToken: event.replyToken as string,
           messages,
       });
-  } else if (action === "ACTION_WAITING_TIME") {
-      const userId = event.source?.userId;
-      const result = await c.env.DB.prepare(
-          'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
-      )
-          .bind(userId)
-          .first();
-          
-      if (result) {
-          const messages = getWaitingTimeMessage(result.ticket_number, waiting, treatment, averageTime);
-          await client.replyMessage({
-              replyToken: event.replyToken as string,
-              messages,
-          });
-      } else {
-          const messages = [{
-              type: 'text',
-              text: 'まだ発券されていません。LINEから発券後の場合に、残りの予想待ち時間が表示されます🙇‍♂️',
-          }];
-          await client.replyMessage({
-              replyToken: event.replyToken as string,
-              messages,
-          });
-      }
-    } else if (action === "ACTION_WAITING_NUMBERS") {
+  } else if (action === "ACTION_WAITING_NUMBERS") {
       try {
           const waitingNumbers = await getWaitingNumbers(c);
           const messages = getWaitingNumbersMessage(waitingNumbers);
@@ -346,7 +321,7 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
           });
           c.executionCtx.waitUntil(sendErrorNotification(c, error, 'Waiting numbers request'));
       }
-    } else if (action === "ACTION_WAITING_TIME") {
+  } else if (action === "ACTION_WAITING_TIME") {
       const userId = event.source?.userId;
       const result = await c.env.DB.prepare(
           'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
@@ -363,7 +338,7 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
               messages,
           });
       } else {
-          const messages = [{
+          const messages: any[] = [{
               type: 'text',
               text: 'まだ発券されていません。LINEから発券後の場合に、残りの予想待ち時間が表示されます🙇‍♂️',
           }];
@@ -372,8 +347,8 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
               messages,
           });
       }
-  };
-}
+  }
+};
 app.get('/api/lineinfo', async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT
