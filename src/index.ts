@@ -190,36 +190,39 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
     } else if (event.message.text === "発券する") {
       const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
       const systemStatus = systemStatusResult?.value ?? 0;
-      // console.log(systemStatus);
-
+    
       if (systemStatus === 0) {
         const waitingCount = waiting;
         const treatmentCount = treatment;
-
+    
         const messages = getTicketMessage(waitingCount, treatmentCount, averageTime);
-
+    
         await client.replyMessage({
           replyToken: event.replyToken as string,
           messages,
         });
       } else {
-const messages = getHoursMessage();
-await client.replyMessage({
-  replyToken: event.replyToken as string,
-  messages,
-});
+        const messages = getHoursMessage();
+        await client.replyMessage({
+          replyToken: event.replyToken as string,
+          messages,
+        });
       }
     } else if (event.message.text === "発券") {
-      // "発券" と返信された場合のみ waiting の値を更新は
-      const userId = event.source?.userId; // 
-      const result = await c.env.DB.prepare(
-        'SELECT EXISTS(SELECT 1 FROM tickets WHERE line_user_id = ?) AS already_ticketed'
-      )
-        .bind(userId)
-        .first();
-  
-      if (result && result.already_ticketed === 1) { 
-          // 発券済みの場合
+      // ここから変更: systemStatusのチェックを追加
+      const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
+      const systemStatus = systemStatusResult?.value ?? 0;
+    
+      if (systemStatus === 0) {
+        // 以下は既存のコード
+        const userId = event.source?.userId;
+        const result = await c.env.DB.prepare(
+          'SELECT EXISTS(SELECT 1 FROM tickets WHERE line_user_id = ?) AS already_ticketed'
+        )
+          .bind(userId)
+          .first();
+    
+        if (result && result.already_ticketed === 1) { 
           const existingTicket = await c.env.DB.prepare(
             'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
           )
@@ -231,7 +234,7 @@ await client.replyMessage({
               type: 'text',
               text: 'すでに発券済みです。',
             },
-            getTicketConfirmationMessage(existingTicket?.ticket_number || 0)[0] // 既存のチケット番号を使用
+            getTicketConfirmationMessage(existingTicket?.ticket_number || 0)[0]
           ];
     
           await client.replyMessage({
@@ -239,12 +242,10 @@ await client.replyMessage({
             messages,
           });
         } else {
-          // 発券していない場合
           let waitingCount = waiting;
           const currentWaitingCount = waitingCount;
           waitingCount++;
           
-          // D1 データベースの waiting カウンターを更新
           await c.env.DB.prepare('UPDATE counter SET value = ? WHERE name = ?').bind(waitingCount, 'waiting').run();
           
           const ticketNumber = currentWaitingCount + 1;
@@ -257,24 +258,30 @@ await client.replyMessage({
             .bind(userId, profile.displayName || '名無しさん', ticketNumber, ticketTime)
             .run();
           
-          // queue_statusテーブルを更新
           await updateQueueStatus(c, waitingCount);
     
-      // 発券完了メッセージを送信
-      const messages = [
-        {
-          type: 'text',
-          text: 'https://www.melp.life/inquiries/new?c=F5moJ9k28I5SAZ2mhdE9ZhkeJU8E-g36-tExyIG78rPhc33sIrAuw3g4AWHLSg1Z' // URLを添付
-        },
-        getTicketConfirmationMessage(ticketNumber)[0]
-      ];
-
-      await client.replyMessage({
-        replyToken: event.replyToken as string,
-        messages,
-      });
-    }
-  } else if (event.message.text === "キャンセル") {
+          const messages = [
+            {
+              type: 'text',
+              text: 'https://www.melp.life/inquiries/new?c=F5moJ9k28I5SAZ2mhdE9ZhkeJU8E-g36-tExyIG78rPhc33sIrAuw3g4AWHLSg1Z'
+            },
+            getTicketConfirmationMessage(ticketNumber)[0]
+          ];
+    
+          await client.replyMessage({
+            replyToken: event.replyToken as string,
+            messages,
+          });
+        }
+      } else {
+        // ここから変更: systemStatusが0以外の場合の処理を追加
+        const messages = getHoursMessage();
+        await client.replyMessage({
+          replyToken: event.replyToken as string,
+          messages,
+        });
+      }
+    } else if (event.message.text === "キャンセル") {
     const messages = [
       {
         type: "text",
@@ -1321,14 +1328,14 @@ app.put('/api/queue-status/:number', async (c) => {
         
         console.log(`Ticket ${ticket.ticket_number}: Unfinished before = ${unfinishedCount}`);
 
-        if (unfinishedCount === 5 && ticket.notification_sent === 0) {
+        if (unfinishedCount === 7 && ticket.notification_sent === 0) {
           console.log(`Sending notification to user with LINE ID: ${ticket.line_user_id}`);
           try {
             await client.pushMessage({
               to: ticket.line_user_id as string,
               messages: [{
                 type: 'text',
-                text: '順番まであと5組になりました🕰\n来院お待ちしております🏥'
+                text: '順番まで約30分となりました。🕰\n来院お待ちしております🏥'
               }]
             });
             console.log('Notification sent successfully');

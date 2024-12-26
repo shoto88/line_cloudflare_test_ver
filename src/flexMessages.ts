@@ -73,26 +73,26 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
                     }
                   ]
                 },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "今現在の待ち時間目安",
-                      "size": "sm",
-                      "color": "#555555",
-                      "flex": 0
-                    },
-                    {
-                      "type": "text",
-                      "text": estimatedTimeString + " " + estimatedMinutesString,
-                      "size": "sm",
-                      "color": "#111111",
-                      "align": "end"
-                    }
-                  ]
-                }
+                // {
+                //   "type": "box",
+                //   "layout": "horizontal",
+                //   "contents": [
+                //     {
+                //       "type": "text",
+                //       "text": "今現在の待ち時間目安",
+                //       "size": "sm",
+                //       "color": "#555555",
+                //       "flex": 0
+                //     },
+                //     {
+                //       "type": "text",
+                //       "text": estimatedTimeString + " " + estimatedMinutesString,
+                //       "size": "sm",
+                //       "color": "#111111",
+                //       "align": "end"
+                //     }
+                //   ]
+                // }
               ]
             },
             {
@@ -106,7 +106,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
 "contents": [
   {
     "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：9月29日,10月6日",
+    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：1月5日,1月19日",
     "size": "xs",
     "color": "#0000ff",
     "wrap": true
@@ -630,7 +630,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
 
             {
               "type": "text",
-              "text": "次回日曜診療日：9月29日,10月6日",
+              "text": "次回日曜診療日：1月5日,1月19日",
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",
