@@ -256,6 +256,37 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
 
       if (systemStatus === 0) {
           const userId = event.source?.userId;
+          
+          // 重複チェックを追加
+          const result = await c.env.DB.prepare(
+              'SELECT EXISTS(SELECT 1 FROM tickets WHERE line_user_id = ?) AS already_ticketed'
+          )
+              .bind(userId)
+              .first();
+
+          if (result && result.already_ticketed === 1) {
+              const existingTicket = await c.env.DB.prepare(
+                  'SELECT ticket_number FROM tickets WHERE line_user_id = ?'
+              )
+                  .bind(userId)
+                  .first();
+
+              const messages: any[] = [
+                  {
+                      type: 'text',
+                      text: 'すでに発券済みです。',
+                  },
+                  getTicketConfirmationMessage(existingTicket?.ticket_number || 0)[0]
+              ];
+
+              await client.replyMessage({
+                  replyToken: event.replyToken as string,
+                  messages,
+              });
+              return;
+          }
+
+          // 既存の発券処理
           let waitingCount = waiting;
           const currentWaitingCount = waitingCount;
           waitingCount++;
