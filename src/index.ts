@@ -6,6 +6,7 @@ import { Buffer } from "node:buffer";
 import { format } from 'date-fns';
 import { renderToString } from 'react-dom/server'
 import React from 'react'
+import { apiKeyAuthMiddleware } from "./apikeyAuth";
 import {
   getStatusMessage,
   getTicketMessage,
@@ -455,7 +456,7 @@ app.get('/api/waiting-numbers', async (c) => {
 
 
 // waiting 更新の API
-app.put('/api/treat/waiting/:action', async (c) => {
+app.put('/api/treat/waiting/:action',apiKeyAuthMiddleware, async (c) => {
   const action = c.req.param('action'); // 'increment' または 'decrement'
 
   try {
@@ -496,7 +497,7 @@ app.put('/api/treat/waiting/:action', async (c) => {
     return c.json({ error: 'Failed to update waiting' }, 500);
   }
 });
-app.delete('/api/reset', async (c) => {
+app.delete('/api/reset',apiKeyAuthMiddleware, async (c) => {
   try {
     // トランザクション開始 (アトミックな操作を保証)
     await c.env.DB.exec('BEGIN');
@@ -533,7 +534,7 @@ app.delete('/api/reset', async (c) => {
   }
 });
 
-app.put('/api/treat/treatment/:action', async (c) => {
+app.put('/api/treat/treatment/:action',apiKeyAuthMiddleware, async (c) => {
   const action = c.req.param('action'); // 'increment' または 'decrement'
   try {
     // treatment の値を更新
@@ -577,7 +578,7 @@ app.put('/api/treat/treatment/:action', async (c) => {
   }
 });
 
-app.put('/api/follow/:userId/examination-number', async (c) => {
+app.put('/api/follow/:userId/examination-number',apiKeyAuthMiddleware, async (c) => {
   const userId = c.req.param('userId');
   const { examinationNumber } = await c.req.json();
 
@@ -659,7 +660,7 @@ app.get('/api/status', async (c) => {
   }
 });
 
-app.put('/api/status', async (c) => {
+app.put('/api/status',apiKeyAuthMiddleware, async (c) => {
   try {
     // 現在のstatusの値を取得
     const result = await c.env.DB.prepare('SELECT value FROM status').first();
@@ -681,7 +682,7 @@ app.put('/api/status', async (c) => {
   }
 });
 
-app.post('/api/ticket-summary', async (c) => {
+app.post('/api/ticket-summary',apiKeyAuthMiddleware, async (c) => {
   try {
     const japanDate = formatJapanTime(new Date(), 'yyyy-MM-dd');
 
@@ -807,7 +808,7 @@ app.get('/api/ticket-summary/:date/:page', async (c) => {
     return c.json({ error: 'Failed to fetch ticket summary' }, 500);
   }
 });
-app.put('/api/reset-counter', async (c) => {
+app.put('/api/reset-counter',apiKeyAuthMiddleware, async (c) => {
   try {
     // counterテーブルの値を0に更新
     await c.env.DB.prepare('UPDATE counter SET value = 0 WHERE name = ?').bind('waiting').run();
@@ -822,7 +823,7 @@ app.put('/api/reset-counter', async (c) => {
     return c.json({ error: 'Failed to reset counter' }, 500);
   }
 });
-app.delete('/api/reset-tickets', async (c) => {
+app.delete('/api/reset-tickets',apiKeyAuthMiddleware, async (c) => {
   try {
     // ticketsテーブルの中身を削除
     await c.env.DB.prepare('DELETE FROM tickets').run();
@@ -1123,7 +1124,7 @@ app.get('/api/examination-time', async (c) => {
 });
 
 // 診察時間を更新するAPI
-app.put('/api/examination-time', async (c) => {
+app.put('/api/examination-time',apiKeyAuthMiddleware, async (c) => {
   const { minutes } = await c.req.json();
   if (typeof minutes !== 'number' || minutes <= 0) {
     return c.json({ error: 'Invalid minutes value' }, 400);
@@ -1142,7 +1143,7 @@ app.put('/api/examination-time', async (c) => {
 });
 
 
-app.post('/api/report-frontend-error', async (c) => {
+app.post('/api/report-frontend-error',apiKeyAuthMiddleware, async (c) => {
   const errorData = await c.req.json();
   const errorMessage = `Frontend error: ${JSON.stringify(errorData)}`; // エラーメッセージを整形
   await sendErrorNotification(c, errorMessage,'POST /api/report-frontend-error');
@@ -1286,7 +1287,7 @@ app.get('/api/queue-status', async (c) => {
 // queue_status テーブルをリセットする API（毎晩実行）
 // ... (前のコードは省略) ...
 
-app.put('/api/queue-status/:number', async (c) => {
+app.put('/api/queue-status/:number',apiKeyAuthMiddleware, async (c) => {
   const number = parseInt(c.req.param('number'));
   const { status } = await c.req.json();
   const client = new messagingApi.MessagingApiClient({ channelAccessToken: c.env.LINE_CHANNEL_ACCESS_TOKEN });
@@ -1377,7 +1378,7 @@ app.put('/api/queue-status/:number', async (c) => {
          
 
 
-app.delete('/api/reset-queue-status', async (c) => {
+app.delete('/api/reset-queue-status',apiKeyAuthMiddleware, async (c) => {
   try {
     await c.env.DB.prepare('DELETE FROM queue_status').run();
     return c.json({ message: 'Queue status reset successfully' });
