@@ -106,7 +106,7 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
 "contents": [
   {
     "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：1月5日,1月19日",
+    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：2月16日,3月2日",
     "size": "xs",
     "color": "#0000ff",
     "wrap": true
@@ -630,7 +630,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
 
             {
               "type": "text",
-              "text": "次回日曜診療日：1月5日,1月19日",
+              "text": "次回日曜診療日：2月16日,3月2日",
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",

@@ -83,7 +83,7 @@ app.use("/webhook", lineWebhookMiddleware);
 //   credentials: true,
 // }))
 
-const allowedOrigins = ['https://line-20.pages.dev', 'http://localhost:5173','https://www.ohori-pc.jp'];
+const allowedOrigins = ['https://line-20.pages.dev', 'http://localhost:4321','https://www.ohori-pc.jp'];
 
 app.use('/api/*', cors({
   origin: (origin, c) => {
