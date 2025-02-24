@@ -1,0 +1,5 @@
+CREATE TABLE sunday_clinics (
+  id INTEGER PRIMARY KEY,
+  date TEXT NOT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);

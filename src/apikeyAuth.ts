@@ -8,19 +8,20 @@ type Bindings = {
 }
 
 export const apiKeyAuthMiddleware = async (c: Context<{ Bindings: Bindings }>, next: Next) => {
-  // ヘッダから "Authorization" を取得 ("Bearer xxx"形式を想定)
   const authHeader = c.req.header('Authorization')
+  console.log('Auth Header:', authHeader);  // デバッグ用
+  console.log('Expected AUTH_KEY:', c.env.AUTH_KEY);  // デバッグ用
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'No or invalid API Key header' }, 401)
   }
 
   const apiKey = authHeader.replace('Bearer ', '')
+  console.log('Received API Key:', apiKey);  // デバッグ用
 
-  // Cloudflareの場合は c.env から環境変数を取得
   if (apiKey !== c.env.AUTH_KEY) {
     return c.json({ error: 'Invalid API Key' }, 401)
   }
 
-  // 正常なら次へ
   await next()
 }

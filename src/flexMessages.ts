@@ -1,6 +1,15 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-function getStatusMessage(waitingNumber: number, currentNumber: number, averageTime: number): any[] {
+
+interface Bindings {
+  DB: D1Database;
+}
+
+interface SundayClinic {
+  date: string;
+}
+
+async function getStatusMessage(env: Bindings, waitingNumber: number, currentNumber: number, averageTime: number): Promise<any[]> {
   const estimatedWaitingTime = (waitingNumber - currentNumber) * averageTime;
   
   const now = new Date();
@@ -10,115 +19,122 @@ function getStatusMessage(waitingNumber: number, currentNumber: number, averageT
   const estimatedTimeString = format(estimatedTime, "HH:mm", { locale: ja });
   const estimatedMinutesString = `(約${Math.round(estimatedWaitingTime)}分後)`;
 
-  
-    const flexMessage = {
-      "type": "flex",
-      "altText": "現在の待ち状況",
-      "contents": {
-        "type": "bubble",
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "text",
-              "text": "現在の待ち状況",
-              "weight": "bold",
-              "size": "xl",
-              "margin": "md"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "margin": "xxl",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "発券済番号",
-                      "size": "sm",
-                      "color": "#555555",
-                      "flex": 0
-                    },
-                    {
-                      "type": "text",
-                      "text": String(waitingNumber),
-                      "size": "sm",
-                      "color": "#111111",
-                      "align": "end"
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "horizontal",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "診察済み組数",
-                      "size": "sm",
-                      "color": "#555555",
-                      "flex": 0
-                    },
-                    {
-                      "type": "text",
-                      "text": String(currentNumber),
-                      "size": "sm",
-                      "color": "#111111",
-                      "align": "end"
-                    }
-                  ]
-                },
-                // {
-                //   "type": "box",
-                //   "layout": "horizontal",
-                //   "contents": [
-                //     {
-                //       "type": "text",
-                //       "text": "今現在の待ち時間目安",
-                //       "size": "sm",
-                //       "color": "#555555",
-                //       "flex": 0
-                //     },
-                //     {
-                //       "type": "text",
-                //       "text": estimatedTimeString + " " + estimatedMinutesString,
-                //       "size": "sm",
-                //       "color": "#111111",
-                //       "align": "end"
-                //     }
-                //   ]
-                // }
-              ]
-            },
-            {
-              "type": "separator",
-              "margin": "xl"
-            },
-            {
-              "type": "box",
-"layout": "vertical",
-"margin": "xl",
-"contents": [
-  {
-    "type": "text",
-    "text": "月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：2月16日,3月2日",
-    "size": "xs",
-    "color": "#0000ff",
-    "wrap": true
-  }
-]
-            }
-          ]
-        }
+  // 日曜診療日を取得
+  const { results: sundayDates } = await env.DB.prepare(
+    'SELECT date FROM sunday_clinics ORDER BY date LIMIT 2'
+  ).all<SundayClinic>();
+
+  // 日付を日本語表示用にフォーマット
+  const formattedDates = sundayDates.map(row => 
+    format(new Date(row.date), 'M月d日', { locale: ja })
+  );
+
+  const sundayMessage = formattedDates.length === 2
+    ? `月2回、日曜日診療しています(10時〜15時)\n次回の日曜診療日：${formattedDates.join(',')}` 
+    : '月2回、日曜日診療しています(10時〜15時)';
+
+  const flexMessage = {
+    "type": "flex",
+    "altText": "現在の待ち状況",
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "現在の待ち状況",
+            "weight": "bold",
+            "size": "xl",
+            "margin": "md"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "xxl",
+            "spacing": "sm",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "発券済番号",
+                    "size": "sm",
+                    "color": "#555555",
+                    "flex": 0
+                  },
+                  {
+                    "type": "text",
+                    "text": String(waitingNumber),
+                    "size": "sm",
+                    "color": "#111111",
+                    "align": "end"
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "診察済み組数",
+                    "size": "sm",
+                    "color": "#555555",
+                    "flex": 0
+                  },
+                  {
+                    "type": "text",
+                    "text": String(currentNumber),
+                    "size": "sm",
+                    "color": "#111111",
+                    "align": "end"
+                  }
+                ]
+              },
+              // {
+              //   "type": "box",
+              //   "layout": "horizontal",
+              //   "contents": [
+              //     {
+              //       "type": "text",
+              //       "text": "今現在の待ち時間目安",
+              //       "size": "sm",
+              //       "color": "#555555",
+              //       "flex": 0
+              //     },
+              //     {
+              //       "type": "text",
+              //       "text": estimatedTimeString + " " + estimatedMinutesString,
+              //       "size": "sm",
+              //       "color": "#111111",
+              //       "align": "end"
+              //     }
+              //   ]
+              // }
+            ]
+          },
+          {
+            "type": "separator",
+            "margin": "xl"
+          },
+          {
+            "type": "text",
+            "text": sundayMessage,
+            "size": "xs",
+            "color": "#0000ff",
+            "wrap": true
+          }
+        ]
       }
-    };
-    return [flexMessage];
-  }  // ... (GASのgetStatusMessage関数の中身をコピー)
+    }
+  };
+
+  return [flexMessage];
+}
 
 // function getStatusMessage(waitingNumber: number, currentNumber: number, averageTime: number): any[] {
 //   const waitingGroups = waitingNumber - currentNumber;
@@ -528,7 +544,21 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
     };
     return [flexMessage];
   }
-  function getHoursMessage(): any[] {
+  async function getHoursMessage(env: Bindings): Promise<any[]> {
+    // 日曜診療日を取得
+    const { results: sundayDates } = await env.DB.prepare(
+      'SELECT date FROM sunday_clinics ORDER BY date LIMIT 2'
+    ).all<SundayClinic>();
+
+    // 日付を日本語表示用にフォーマット
+    const formattedDates = sundayDates.map(row => 
+      format(new Date(row.date), 'M月d日', { locale: ja })
+    );
+
+    const sundayMessage = formattedDates.length > 0
+      ? `次回日曜診療日：${formattedDates.join(',')}`
+      : '次回の日曜診療日は未定です';
+
     const flexMessage = {
       "type": "flex",
       "altText": "利用時間と次回日曜診療日",
@@ -630,7 +660,7 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
 
             {
               "type": "text",
-              "text": "次回日曜診療日：2月16日,3月2日",
+              "text": sundayMessage,
               "size": "sm",
               "weight": "bold",
               "color": "#0000ff",

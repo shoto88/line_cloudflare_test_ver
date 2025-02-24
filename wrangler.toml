@@ -1,4 +1,4 @@
-name = "my-app"
+name = "line-hono-test"
 compatibility_date = "2023-12-01"
 
 # [vars]
@@ -21,8 +21,13 @@ compatibility_date = "2023-12-01"
 # binding = "AI"
 
 compatibility_flags = [ "nodejs_compat" ]
-
+[triggers]
+crons = [
+  "0 0 * * *",      # 毎日0:00に実行
+  "20 13 * * 1-5",  # 平日13:20に実行
+  "0 7 * * 1"       # 毎週月曜7:00に実行
+]
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
-database_name = "db_20"
-database_id = "c310a6ec-4df9-41cf-af90-a4ea237cc3c2"
+database_name = "db_20_test"
+database_id = "e5de49ec-20df-4be2-af32-732d17f66530"

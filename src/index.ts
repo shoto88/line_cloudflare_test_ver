@@ -83,7 +83,7 @@ app.use("/webhook", lineWebhookMiddleware);
 //   credentials: true,
 // }))
 
-const allowedOrigins = ['https://line-20.pages.dev', 'http://localhost:4321','https://www.ohori-pc.jp'];
+const allowedOrigins = ['https://lineui-test.pages.dev', 'http://localhost:4321'];
 
 app.use('/api/*', cors({
   origin: (origin, c) => {
@@ -200,10 +200,10 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
   if (action === "ACTION_STATUS") {
       const waitingCount = waiting;
       const treatmentCount = treatment;
-      const messages = getStatusMessage(waitingCount, treatmentCount, averageTime);
+      const messages = await getStatusMessage(c.env, waitingCount, treatmentCount, averageTime);
       await client.replyMessage({
           replyToken: event.replyToken as string,
-          messages,
+          messages: messages,
       });
   } else if (action === "ACTION_TICKET") {
       const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
@@ -245,7 +245,7 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
               });
           }
       } else {
-          const messages = getHoursMessage();
+          const messages = await getHoursMessage(c.env);
           await client.replyMessage({
               replyToken: event.replyToken as string,
               messages,
@@ -319,7 +319,7 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
               messages,
           });
       } else {
-          const messages = getHoursMessage();
+          const messages = await getHoursMessage(c.env);
           await client.replyMessage({
               replyToken: event.replyToken as string,
               messages,
@@ -1515,6 +1515,261 @@ async function updateStatusToReserve(c: { env: { DB: D1Database } }) {
   }
 }
 
+// ミドルウェアを追加
+app.put('/api/trigger-system-on', apiKeyAuthMiddleware, async (c) => {
+  try {
+    const body = await c.req.json();
+    const { test_date } = body;
+    const now = test_date ? new Date(test_date) : new Date();
+    
+    const japanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const dayOfWeek = japanTime.getDay();
+    const hour = japanTime.getHours();
+    const minute = japanTime.getMinutes();
+    const formattedDate = format(japanTime, 'yyyy-MM-dd');
 
-export default app;
+    console.log('Debug info:', {
+      japanTime: japanTime.toISOString(),
+      dayOfWeek,
+      hour,
+      minute,
+      formattedDate
+    });
 
+    // 休診日チェック - D1データベースから取得
+    const { results: closedDays } = await c.env.DB.prepare(
+      'SELECT date FROM closed_days WHERE date = ?'
+    ).bind(formattedDate).all();
+
+    console.log('Closed days check:', {
+      formattedDate,
+      isClosedDay: closedDays.length > 0,
+      closedDays
+    });
+
+    // 休診日の場合は即座にreturn
+    if (closedDays.length > 0) {
+      return c.json({ message: 'No action taken.' });
+    }
+
+    let shouldUpdateStatus = false;
+
+    // 平日（月〜金）の場合
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      if ((hour === 0 && minute === 0) || (hour === 13 && minute === 20)) {
+        shouldUpdateStatus = true;
+      }
+    } 
+    // 土曜日または日曜日の場合
+    else if (dayOfWeek === 0 || dayOfWeek === 6) {
+      if (hour === 0 && minute === 0) {
+        shouldUpdateStatus = true;
+      }
+    }
+
+    if (shouldUpdateStatus) {
+      try {
+        await c.env.DB.prepare('UPDATE status SET value = 0 WHERE id = 1').run();
+        return c.json({ message: 'System status updated to reserve (0).' });
+      } catch (dbError) {
+        console.error('Database update error:', dbError);
+        throw dbError;
+      }
+    }
+
+    return c.json({ message: 'No action taken.' });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in /api/trigger-system-on:', errorMessage);
+    if (error instanceof Error && error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    c.executionCtx.waitUntil(sendErrorNotification(c, errorMessage, 'PUT /api/trigger-system-on'));
+    return c.json({ 
+      error: 'Failed to update system status',
+      details: errorMessage 
+    }, 500);
+  }
+});
+app.get('/api/closed-days', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare('SELECT * FROM closed_days').all();
+    return c.json(results);
+  } catch (error) {
+    console.error('Error fetching closed dates:', error);
+    return c.json({ error: 'Failed to fetch closed dates' }, 500);
+  }
+});
+
+app.post('/api/closed-days', apiKeyAuthMiddleware, async (c) => {
+  try {
+    const { date } = await c.req.json();
+
+    if (!date) {
+      return c.json({ error: 'Date is required' }, 400);
+    }
+
+    await c.env.DB.prepare('INSERT INTO closed_days (date) VALUES (?)')
+      .bind(date).run();
+    return c.json({ message: 'Closed date added successfully' });
+  } catch (error) {
+    console.error('Error adding closed date:', error);
+    return c.json({ error: 'Failed to add closed date' }, 500);
+  }
+});
+
+app.delete('/api/closed-days/:id', apiKeyAuthMiddleware, async (c) => {
+  try {
+    const id = c.req.param('id');
+    await c.env.DB.prepare('DELETE FROM closed_days WHERE id = ?').bind(id).run();
+    return c.json({ message: 'Closed date removed successfully' });
+  } catch (error) {
+    console.error('Error removing closed date:', error);
+    return c.json({ error: 'Failed to remove closed date' }, 500);
+  }
+});
+const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (event, env, ctx) => {
+  try {
+    const now = new Date();
+    const japanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const formattedDate = format(japanTime, 'yyyy-MM-dd');
+    const hour = japanTime.getHours();
+    const minute = japanTime.getMinutes();
+
+    console.log('Cron実行開始:', {
+      cron: event.cron,
+      UTC: now.toISOString(),
+      JST: japanTime.toISOString(),
+      formattedDate,
+      hour,
+      minute
+    });
+
+    switch (event.cron) {
+      case "0 0 * * *":  // 毎日0:00
+      case "20 13 * * 1-5":  // 平日13:20
+        // 休診日チェック
+        const { results: closedDays } = await env.DB.prepare(
+          'SELECT date FROM closed_days WHERE date = ?'
+        ).bind(formattedDate).all();
+
+    if (closedDays.length > 0) {
+      console.log(`${formattedDate} は休診日のため、予約開始しません`);
+      return;
+    }
+
+    const currentStatus = await env.DB.prepare(
+      'SELECT id, value FROM status WHERE id = 1'
+    ).first();
+
+    if (currentStatus?.value === 0) {
+      console.log('既に予約開始状態（0）です');
+      return;
+    }
+
+        const updateResult = await env.DB.prepare(
+          'UPDATE status SET value = 0 WHERE id = 1'
+        ).run();
+
+    console.log('更新結果:', {
+      success: true,
+      meta: updateResult.meta
+    });
+
+        console.log(`${formattedDate} の予約受付を開始しました`);
+        break;
+      
+      case "0 7 * * 1":  // 毎週月曜7:00
+        await updateSundayClinics(env);
+        break;
+      
+      default:
+        console.log('未定義のCRONパターン:', event.cron);
+    }
+
+  } catch (error) {
+    console.error('Cronエラー詳細:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
+}
+
+// 日曜診療日更新関数
+async function updateSundayClinics(env: Bindings) {
+  try {
+    const now = new Date();
+    const japanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    let nextSundays: string[] = [];
+    let count = 0;
+    let currentDate = new Date(japanTime);
+
+    // 次の2つの診療可能な日曜日を見つける
+    while (nextSundays.length < 2) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      if (currentDate.getDay() === 0) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        
+        // closed_daysテーブルのみをチェック
+        const { results: closedDays } = await env.DB.prepare(
+          'SELECT date FROM closed_days WHERE date = ?'
+        ).bind(dateStr).all();
+
+        if (closedDays.length === 0) {
+          nextSundays.push(dateStr);
+        }
+      }
+      
+      count++;
+      if (count > 100) break;
+    }
+
+    // D1のネイティブトランザクションAPIを使用
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM sunday_clinics'),
+      ...nextSundays.map(date => 
+        env.DB.prepare('INSERT INTO sunday_clinics (date) VALUES (?)').bind(date)
+      )
+    ]);
+
+    console.log('日曜診療日を更新しました:', nextSundays);
+
+  } catch (error) {
+    console.error('日曜診療日の更新に失敗:', error);
+    throw error;
+  }
+}
+
+// 日曜診療日の取得API
+app.get('/api/sunday-clinics', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(
+      'SELECT date FROM sunday_clinics ORDER BY date LIMIT 2'
+    ).all();
+    
+    return c.json(results);
+  } catch (error) {
+    console.error('Error fetching sunday clinic dates:', error);
+    c.executionCtx.waitUntil(sendErrorNotification(c, error instanceof Error ? error.message : 'Unknown error', 'GET /api/sunday-clinics'));
+    return c.json({ error: 'Failed to fetch sunday clinic dates' }, 500);
+  }
+});
+
+// 管理用の手動更新API
+app.post('/api/sunday-clinics/update', apiKeyAuthMiddleware, async (c) => {
+  try {
+    await updateSundayClinics(c.env);
+    return c.json({ message: 'Sunday clinic dates updated successfully' });
+  } catch (error) {
+    console.error('Error updating sunday clinic dates:', error);
+    c.executionCtx.waitUntil(sendErrorNotification(c, error instanceof Error ? error.message : 'Unknown error', 'POST /api/sunday-clinics/update'));
+    return c.json({ error: 'Failed to update sunday clinic dates' }, 500);
+  }
+});
+// エクスポート形式を修正
+export default {
+  fetch: app.fetch,
+  scheduled
+}
