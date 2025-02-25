@@ -197,13 +197,73 @@ const textEventHandler = async (event: webhook.Event, client: messagingApi.Messa
   const averageTime = examinationTimeResult ? examinationTimeResult.minutes : 4;
   const action = event.postback.data;
 
+  // キャンセル処理
+  if (action && action.startsWith("ACTION_CANCEL_TICKET_")) {
+    try {
+      const ticketNumber = parseInt(action.replace("ACTION_CANCEL_TICKET_", ""));
+      
+      // ユーザー権限チェック（チケットの所有者であることを確認）
+      const userId = event.source?.userId;
+      const ticketInfo = await c.env.DB.prepare(`
+        SELECT * FROM tickets 
+        WHERE ticket_number = ? AND line_user_id = ?
+      `).bind(ticketNumber, userId).first();
+      
+      if (!ticketInfo) {
+        // 権限エラーメッセージ
+        await client.replyMessage({
+          replyToken: event.replyToken as string,
+          messages: [{
+            type: 'text',
+            text: "このチケットをキャンセルする権限がありません。"
+          }]
+        });
+        return;
+      }
+      
+      // キャンセル処理
+      await c.env.DB.prepare(`
+        UPDATE queue_status 
+        SET status = 2 
+        WHERE number = ?
+      `).bind(ticketNumber).run();
+      
+      // ticketsテーブルのis_canceledを1に更新
+      await c.env.DB.prepare(`
+        UPDATE tickets 
+        SET is_canceled = 1 
+        WHERE ticket_number = ?
+      `).bind(ticketNumber).run();
+      
+      // キャンセル完了メッセージをLINEで返信
+      await client.replyMessage({
+        replyToken: event.replyToken as string,
+        messages: [{
+          type: 'text',
+          text: `発券番号${ticketNumber}のキャンセルが完了しました。またのご利用をお待ちしております。`
+        }]
+      });
+    } catch (error) {
+      console.error('Error handling ticket cancellation:', error);
+      await client.replyMessage({
+        replyToken: event.replyToken as string,
+        messages: [{
+          type: 'text',
+          text: 'キャンセル処理中にエラーが発生しました。しばらくしてからもう一度お試しください。'
+        }]
+      });
+      c.executionCtx.waitUntil(sendErrorNotification(c, error, 'Ticket cancellation'));
+    }
+    return;
+  }
+
   if (action === "ACTION_STATUS") {
       const waitingCount = waiting;
       const treatmentCount = treatment;
       const messages = await getStatusMessage(c.env, waitingCount, treatmentCount, averageTime);
       await client.replyMessage({
           replyToken: event.replyToken as string,
-          messages: messages,
+          messages,
       });
   } else if (action === "ACTION_TICKET") {
       const systemStatusResult = await c.env.DB.prepare('SELECT value FROM status').first();
@@ -1773,3 +1833,75 @@ export default {
   fetch: app.fetch,
   scheduled
 }
+
+// チケットをキャンセルするAPI
+app.delete('/api/cancel-ticket/:number', apiKeyAuthMiddleware, async (c) => {
+  try {
+    const ticketNumber = parseInt(c.req.param('number'));
+    
+    // チケットの存在確認と情報取得
+    const ticketInfo = await c.env.DB.prepare(`
+      SELECT t.line_user_id, t.line_display_name, t.ticket_number
+      FROM tickets t
+      WHERE t.ticket_number = ?
+    `).bind(ticketNumber).first();
+    
+    if (!ticketInfo) {
+      return c.json({ error: 'Ticket not found' }, 404);
+    }
+    
+    // キャンセル処理
+    // queue_statusのstatusを2（キャンセル）に更新
+    await c.env.DB.prepare(`
+      UPDATE queue_status 
+      SET status = 2 
+      WHERE number = ?
+    `).bind(ticketNumber).run();
+    
+    // ticketsテーブルのis_canceledを1に更新
+    await c.env.DB.prepare(`
+      UPDATE tickets 
+      SET is_canceled = 1 
+      WHERE ticket_number = ?
+    `).bind(ticketNumber).run();
+    
+    // LINEでキャンセル通知を送信
+    if (ticketInfo.line_user_id) {
+      const client = new messagingApi.MessagingApiClient({ 
+        channelAccessToken: c.env.LINE_CHANNEL_ACCESS_TOKEN 
+      });
+      
+      try {
+        await client.pushMessage({
+          to: ticketInfo.line_user_id as string,
+          messages: [{
+            type: 'text',
+            text: `受付でお客様の発券番号${ticketNumber}がキャンセルされました。ご不明な点は直接クリニックにお問い合わせください。`
+          }]
+        });
+      } catch (notificationError) {
+        console.error('Error sending cancellation notification:', notificationError);
+        // 通知エラーは処理を続行
+      }
+    }
+    
+    return c.json({ success: true, message: `Ticket ${ticketNumber} has been cancelled` });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error cancelling ticket:', errorMessage);
+    c.executionCtx.waitUntil(sendErrorNotification(c, errorMessage, `DELETE /api/cancel-ticket/${c.req.param('number')}`));
+    return c.json({ error: 'Failed to cancel ticket' }, 500);
+  }
+});
+
+app.delete('/api/reset-queue-status',apiKeyAuthMiddleware, async (c) => {
+  try {
+    await c.env.DB.prepare('DELETE FROM queue_status').run();
+    return c.json({ message: 'Queue status reset successfully' });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error resetting queue status:', errorMessage);
+    c.executionCtx.waitUntil(sendErrorNotification(c, errorMessage, 'DELETE /api/reset-queue-status'));
+    return c.json({ error: 'Failed to reset queue status' }, 500);
+  }
+});

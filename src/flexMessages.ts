@@ -333,468 +333,488 @@ function getTicketMessage(waitingNumber: number, currentNumber: number, averageT
 
   return [flexMessage];
 }
-  function getTicketConfirmationMessage(ticketNumber: number): any[] {
-    const flexMessage = {
-      type: "flex",
-      altText: "発券完了",
-      contents: {
-        type: "bubble",
-        body: {
-          type: "box",
-          layout: "vertical",
-          contents: [
-            {
-              type: "text",
-              text: "受付時『番号表示』を押し",
-              weight: "bold",
-              size: "lg",
-              margin: "md",
-              align: "center",
-              contents: [
-                {
-                  type: "span",
-                  text: "受付時"
-                },
-                {
-                  type: "span",
-                  text: "『番号表示』",
-                  size: "xl",
-                  color: "#ff3131"
-                },
-                {
-                  type: "span",
-                  text: "を押し"
-                }
-              ]
-            },
-            {
-              type: "text",
-              text: "発券番号をご提示ください🙇‍♂️",
-              weight: "bold",
-              size: "lg",
-              margin: "md",
-              align: "center",
-            },
-            {
-              type: "text",
-              text: String(ticketNumber),
-              weight: "bold",
-              size: "4xl",
-              margin: "md",
-              align: "center",
-            },
-            {
-              type: "separator",
-              margin: "lg",
-            },
-            {
-              type: "box",
-              layout: "vertical",
-              margin: "md",
-              spacing: "sm",
-              contents: [
 
-                {
-                  type: "text",
-                  text: "・来院前にメルプの記入を必ずお願いします",
-                  size: "xs",
-                  color: "#ff0000",
-                  wrap: true,
-                },
-                {
-                  type: "text",
-                  text: "・記入済みの方は記入しなくて大丈夫です",
-                  size: "xs",
-                  color: "#FAA0A0",
-                  wrap: true,
-                },
-                {
-                  type: "text",
-                  text: "・『待ち番号一覧』で随時確認できます",
-                  size: "xs",
-                  color: "#aaaaaa",
-                  wrap: true,
-                },
-              ],
-            },
-          ],
-        },
+function getTicketConfirmationMessage(ticketNumber: number): any[] {
+  const flexMessage = {
+    type: "flex",
+    altText: "発券完了",
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "受付時『番号表示』を押し",
+            weight: "bold",
+            size: "lg",
+            margin: "md",
+            align: "center",
+            contents: [
+              {
+                type: "span",
+                text: "受付時"
+              },
+              {
+                type: "span",
+                text: "『番号表示』",
+                size: "xl",
+                color: "#ff3131"
+              },
+              {
+                type: "span",
+                text: "を押し"
+              }
+            ]
+          },
+          {
+            type: "text",
+            text: "発券番号をご提示ください🙇‍♂️",
+            weight: "bold",
+            size: "lg",
+            margin: "md",
+            align: "center",
+          },
+          {
+            type: "text",
+            text: String(ticketNumber),
+            weight: "bold",
+            size: "4xl",
+            margin: "md",
+            align: "center",
+          },
+          {
+            type: "separator",
+            margin: "lg",
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "md",
+            spacing: "sm",
+            contents: [
+              {
+                type: "text",
+                text: "・来院前にメルプの記入を必ずお願いします",
+                size: "xs",
+                color: "#ff0000",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "・記入済みの方は記入しなくて大丈夫です",
+                size: "xs",
+                color: "#FAA0A0",
+                wrap: true,
+              },
+              {
+                type: "text",
+                text: "・『待ち番号一覧』で随時確認できます",
+                size: "xs",
+                color: "#aaaaaa",
+                wrap: true,
+              },
+            ],
+          },
+        ],
       },
-    };
-  
-    return [flexMessage];
-  }
-  
-  function getWaitingTimeMessage(ticketNumber: number, waitingNumber: number, currentNumber: number, averageTime: number): any[] {
-    const estimatedWaitingTime = (ticketNumber - currentNumber) * averageTime;
-    const now = new Date();
-    const japanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-    const estimatedTime = new Date(japanTime.getTime() + estimatedWaitingTime * 60000);
-    
-    const estimatedTimeString = format(estimatedTime, "HH:mm", { locale: ja });
-    const estimatedMinutesString = `(約${Math.round(estimatedWaitingTime)}分後)`;
-  
-    const flexMessage = {
-      type: "flex",
-      altText: "待ち時間",
-      contents: {
-        type: "bubble",
-        body: {
-          type: "box",
-          layout: "vertical",
-          contents: [
-            {
-              type: "text",
-              text: "待ち時間",
-              weight: "bold",
-              size: "xl",
-              margin: "md",
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: "発券をキャンセルする",
+              data: `ACTION_CANCEL_TICKET_${ticketNumber}`
             },
-            {
-              type: "box",
-              layout: "vertical",
-              margin: "xxl",
-              spacing: "sm",
-              contents: [
-                {
-                  type: "box",
-                  layout: "horizontal",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "発券済番号",
-                      size: "sm",
-                      color: "#555555",
-                      flex: 0,
-                    },
-                    {
-                      type: "text",
-                      text: String(waitingNumber),
-                      size: "sm",
-                      color: "#111111",
-                      align: "end",
-                    },
-                  ],
-                },
-                {
-                  type: "box",
-                  layout: "horizontal",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "診察済み組数",
-                      size: "sm",
-                      color: "#555555",
-                      flex: 0,
-                    },
-                    {
-                      type: "text",
-                      text: String(currentNumber),
-                      size: "sm",
-                      color: "#111111",
-                      align: "end",
-                    },
-                  ],
-                },
-                {
-                  type: "box",
-                  layout: "horizontal",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "あなたの番号",
-                      size: "sm",
-                      color: "#555555",
-                      flex: 0,
-                    },
-                    {
-                      type: "text",
-                      text: String(ticketNumber),
-                      size: "sm",
-                      color: "#111111",
-                      align: "end",
-                    },
-                  ],
-                },
-                {
-                  type: "box",
-                  layout: "horizontal",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "予想診療時刻",
-                      size: "sm",
-                      color: "#555555",
-                      flex: 0,
-                    },
-                    {
-                      type: "text",
-                      text: estimatedTimeString + " " + estimatedMinutesString,
-                      size: "sm",
-                      color: "#111111",
-                      align: "end",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    };
-    return [flexMessage];
-  }
-  async function getHoursMessage(env: Bindings): Promise<any[]> {
-    // 日曜診療日を取得
-    const { results: sundayDates } = await env.DB.prepare(
-      'SELECT date FROM sunday_clinics ORDER BY date LIMIT 2'
-    ).all<SundayClinic>();
-
-    // 日付を日本語表示用にフォーマット
-    const formattedDates = sundayDates.map(row => 
-      format(new Date(row.date), 'M月d日', { locale: ja })
-    );
-
-    const sundayMessage = formattedDates.length > 0
-      ? `次回日曜診療日：${formattedDates.join(',')}`
-      : '次回の日曜診療日は未定です';
-
-    const flexMessage = {
-      "type": "flex",
-      "altText": "利用時間と次回日曜診療日",
-      "contents": {
-        "type": "bubble",
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "text",
-              "text": "現在システム利用時間外です🙇‍♂️",
-              "weight": "bold",
-              "size": "md",
-              "color": "#ff0000",
-              "wrap": true
-            },
-            {
-              "type": "text",
-              "text": "LINE予約システム利用時間",
-              "weight": "bold",
-              "size": "md",
-              "margin": "md"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "margin": "lg",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "box",
-                  "layout": "baseline",
-                  "spacing": "sm",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "平日",
-                      "color": "#555555",
-                      "size": "sm",
-                      "flex": 1
-                    },
-                    {
-                      "type": "text",
-                      "text": "00:00〜12:20 (午前)\n13:20〜18:20 (午後)",
-                      "wrap": true,
-                      "color": "#111111",
-                      "size": "sm",
-                      "flex": 2
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "baseline",
-                  "spacing": "sm",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "土曜日",
-                      "color": "#555555",
-                      "size": "sm",
-                      "flex": 1
-                    },
-                    {
-                      "type": "text",
-                      "text": "00:00〜14:30",
-                      "wrap": true,
-                      "color": "#111111",
-                      "size": "sm",
-                      "flex": 2
-                    }
-                  ]
-                },
-                {
-                  "type": "box",
-                  "layout": "baseline",
-                  "spacing": "sm",
-                  "contents": [
-                    {
-                      "type": "text",
-                      "text": "日曜診療日",
-                      "color": "#555555",
-                      "size": "sm",
-                      "flex": 1
-                    },
-                    {
-                      "type": "text",
-                      "text": "00:00〜14:30",
-                      "wrap": true,
-                      "color": "#111111",
-                      "size": "sm",
-                      "flex": 2
-                    }
-                  ]
-                }
-              ]
-            },
-
-            {
-              "type": "text",
-              "text": sundayMessage,
-              "size": "sm",
-              "weight": "bold",
-              "color": "#0000ff",
-              "margin": "lg"
-            }
-          ]
-        }
+            color: "#ff6347"
+          }
+        ],
+        flex: 0
       }
-    };
-    return [flexMessage];
-  }
+    },
+  };
+
+  return [flexMessage];
+}
+
+function getWaitingTimeMessage(ticketNumber: number, waitingNumber: number, currentNumber: number, averageTime: number): any[] {
+  const estimatedWaitingTime = (ticketNumber - currentNumber) * averageTime;
+  const now = new Date();
+  const japanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const estimatedTime = new Date(japanTime.getTime() + estimatedWaitingTime * 60000);
   
+  const estimatedTimeString = format(estimatedTime, "HH:mm", { locale: ja });
+  const estimatedMinutesString = `(約${Math.round(estimatedWaitingTime)}分後)`;
+
+  const flexMessage = {
+    type: "flex",
+    altText: "待ち時間",
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: "待ち時間",
+            weight: "bold",
+            size: "xl",
+            margin: "md",
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "xxl",
+            spacing: "sm",
+            contents: [
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "text",
+                    text: "発券済番号",
+                    size: "sm",
+                    color: "#555555",
+                    flex: 0,
+                  },
+                  {
+                    type: "text",
+                    text: String(waitingNumber),
+                    size: "sm",
+                    color: "#111111",
+                    align: "end",
+                  },
+                ],
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "text",
+                    text: "診察済み組数",
+                    size: "sm",
+                    color: "#555555",
+                    flex: 0,
+                  },
+                  {
+                    type: "text",
+                    text: String(currentNumber),
+                    size: "sm",
+                    color: "#111111",
+                    align: "end",
+                  },
+                ],
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "text",
+                    text: "あなたの番号",
+                    size: "sm",
+                    color: "#555555",
+                    flex: 0,
+                  },
+                  {
+                    type: "text",
+                    text: String(ticketNumber),
+                    size: "sm",
+                    color: "#111111",
+                    align: "end",
+                  },
+                ],
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "text",
+                    text: "予想診療時刻",
+                    size: "sm",
+                    color: "#555555",
+                    flex: 0,
+                  },
+                  {
+                    type: "text",
+                    text: estimatedTimeString + " " + estimatedMinutesString,
+                    size: "sm",
+                    color: "#111111",
+                    align: "end",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+  return [flexMessage];
+}
+
+async function getHoursMessage(env: Bindings): Promise<any[]> {
+  // 日曜診療日を取得
+  const { results: sundayDates } = await env.DB.prepare(
+    'SELECT date FROM sunday_clinics ORDER BY date LIMIT 2'
+  ).all<SundayClinic>();
+
+  // 日付を日本語表示用にフォーマット
+  const formattedDates = sundayDates.map(row => 
+    format(new Date(row.date), 'M月d日', { locale: ja })
+  );
+
+  const sundayMessage = formattedDates.length > 0
+    ? `次回日曜診療日：${formattedDates.join(',')}`
+    : '次回の日曜診療日は未定です';
+
+  const flexMessage = {
+    "type": "flex",
+    "altText": "利用時間と次回日曜診療日",
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "現在システム利用時間外です🙇‍♂️",
+            "weight": "bold",
+            "size": "md",
+            "color": "#ff0000",
+            "wrap": true
+          },
+          {
+            "type": "text",
+            "text": "LINE予約システム利用時間",
+            "weight": "bold",
+            "size": "md",
+            "margin": "md"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "lg",
+            "spacing": "sm",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "baseline",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "平日",
+                    "color": "#555555",
+                    "size": "sm",
+                    "flex": 1
+                  },
+                  {
+                    "type": "text",
+                    "text": "00:00〜12:20 (午前)\n13:20〜18:20 (午後)",
+                    "wrap": true,
+                    "color": "#111111",
+                    "size": "sm",
+                    "flex": 2
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "土曜日",
+                    "color": "#555555",
+                    "size": "sm",
+                    "flex": 1
+                  },
+                  {
+                    "type": "text",
+                    "text": "00:00〜14:30",
+                    "wrap": true,
+                    "color": "#111111",
+                    "size": "sm",
+                    "flex": 2
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "layout": "baseline",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "日曜診療日",
+                    "color": "#555555",
+                    "size": "sm",
+                    "flex": 1
+                  },
+                  {
+                    "type": "text",
+                    "text": "00:00〜14:30",
+                    "wrap": true,
+                    "color": "#111111",
+                    "size": "sm",
+                    "flex": 2
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "text",
+            "text": sundayMessage,
+            "size": "sm",
+            "weight": "bold",
+            "color": "#0000ff",
+            "margin": "lg"
+          }
+        ]
+      }
+    }
+  };
+  return [flexMessage];
+}
+
 function getHolidayMessage(): any[] {
-    const flexMessage = {
-      "type": "flex",
-      "altText": "休診日のお知らせ",
-      "contents": {
-        "type": "bubble",
-        "body": {
-          "type": "box",
-          "layout": "vertical",
-          "contents": [
-            {
-              "type": "text",
-              "text": "休診日のお知らせ",
-              "weight": "bold",
-              "size": "xl",
-              "margin": "md"
-            },
-            {
-              "type": "text",
-              "text": "本日は休診日です。\n予約券の発券はできません。",
-              "wrap": true,
-              "margin": "md"
-            },
-            {
-              "type": "separator",
-              "margin": "xxl"
-            },
-            {
-              "type": "box",
-              "layout": "vertical",
-              "margin": "md",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "システム利用時間",
-                  "size": "md",
-                  "weight": "bold",
-                  "margin": "md"
-                },
-                {
-                  "type": "box",
-                  "layout": "vertical",
-                  "margin": "lg",
-                  "spacing": "sm",
-                  "contents": [
-                    {
-                      "type": "box",
-                      "layout": "baseline",
-                      "spacing": "sm",
-                      "contents": [
-                        {
-                          "type": "text",
-                          "text": "月曜~金曜",
-                          "color": "#aaaaaa",
-                          "size": "sm",
-                          "flex": 1
-                        },
-                        {
-                          "type": "text",
-                          "text": "00:00 - 12:20 / 13:20 - 18:20",
-                          "wrap": true,
-                          "color": "#666666",
-                          "size": "sm",
-                          "flex": 4
-                        }
-                      ]
-                    },
-                    {
-                      "type": "box",
-                      "layout": "baseline",
-                      "spacing": "sm",
-                      "contents": [
-                        {
-                          "type": "text",
-                          "text": "土曜",
-                          "color": "#aaaaaa",
-                          "size": "sm",
-                          "flex": 1
-                        },
-                        {
-                          "type": "text",
-                          "text": "00:00 - 14:30",
-                          "wrap": true,
-                          "color": "#666666",
-                          "size": "sm",
-                          "flex": 4
-                        }
-                      ]
-                    },
-                    {
-                      "type": "box",
-                      "layout": "baseline",
-                      "spacing": "sm",
-                      "contents": [
-                        {
-                          "type": "text",
-                          "text": "日曜・祝日",
-                          "color": "#aaaaaa",
-                          "size": "sm",
-                          "flex": 1
-                        },
-                        {
-                          "type": "text",
-                          "text": "休診",
-                          "wrap": true,
-                          "color": "#666666",
-                          "size": "sm",
-                          "flex": 4
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+  const flexMessage = {
+    "type": "flex",
+    "altText": "休診日のお知らせ",
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "休診日のお知らせ",
+            "weight": "bold",
+            "size": "xl",
+            "margin": "md"
+          },
+          {
+            "type": "text",
+            "text": "本日は休診日です。\n予約券の発券はできません。",
+            "wrap": true,
+            "margin": "md"
+          },
+          {
+            "type": "separator",
+            "margin": "xxl"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "contents": [
+              {
+                "type": "text",
+                "text": "システム利用時間",
+                "size": "md",
+                "weight": "bold",
+                "margin": "md"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "margin": "lg",
+                "spacing": "sm",
+                "contents": [
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "spacing": "sm",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "月曜~金曜",
+                        "color": "#aaaaaa",
+                        "size": "sm",
+                        "flex": 1
+                      },
+                      {
+                        "type": "text",
+                        "text": "00:00 - 12:20 / 13:20 - 18:20",
+                        "wrap": true,
+                        "color": "#666666",
+                        "size": "sm",
+                        "flex": 4
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "spacing": "sm",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "土曜",
+                        "color": "#aaaaaa",
+                        "size": "sm",
+                        "flex": 1
+                      },
+                      {
+                        "type": "text",
+                        "text": "00:00 - 14:30",
+                        "wrap": true,
+                        "color": "#666666",
+                        "size": "sm",
+                        "flex": 4
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "baseline",
+                    "spacing": "sm",
+                    "contents": [
+                      {
+                        "type": "text",
+                        "text": "日曜・祝日",
+                        "color": "#aaaaaa",
+                        "size": "sm",
+                        "flex": 1
+                      },
+                      {
+                        "type": "text",
+                        "text": "休診",
+                        "wrap": true,
+                        "color": "#666666",
+                        "size": "sm",
+                        "flex": 4
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
-    };
-    return [flexMessage];
-  }
-  
+    }
+  };
+  return [flexMessage];
+}
+
 function getWaitingNumbersMessage(waitingNumbers: number[]): any[] {
   const columns = 5; // 1行あたりの列数
   const rows = Math.ceil(waitingNumbers.length / columns);
@@ -864,4 +884,5 @@ function getWaitingNumbersMessage(waitingNumbers: number[]): any[] {
 
   return [flexMessage];
 }
+
 export { getStatusMessage, getTicketMessage, getTicketConfirmationMessage, getWaitingTimeMessage, getHoursMessage, getHolidayMessage, getWaitingNumbersMessage };
